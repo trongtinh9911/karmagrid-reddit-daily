@@ -9,5 +9,26 @@
 				"height": "tall"
 			}
 		}
+	},
+	"server": {
+		"dir": "dist/server",
+		"entry": "index.js"
+	},
+	"menu": {
+		"items": [
+			{
+				"label": "Create KarmaGrid Daily Post",
+				"description": "Spawn today's interactive KarmaGrid puzzle post in this subreddit",
+				"location": "subreddit",
+				"forUserType": "moderator",
+				"endpoint": "/internal/menu/create-post"
+			}
+		]
+	},
+	"triggers": {
+		"onAppInstall": "/internal/triggers/on-app-install"
+	},
+	"dev": {
+		"subreddit": "karmagrid_daily_dev"
 	}
 }

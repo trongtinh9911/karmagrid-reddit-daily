@@ -1,18 +1,21 @@
 {
 	"name": "reddit-karmagrid",
-	"version": "1.0.0",
+	"version": "0.0.2",
 	"description": "KarmaGrid - The Daily Reddit Logic Game for Reddit's Game of the Day Hackathon",
 	"private": true,
 	"type": "module",
 	"scripts": {
 		"dev": "vite",
-		"build": "tsc && vite build",
+		"build:client": "tsc && vite build",
+		"build:server": "vite build --config vite.server.config.ts && echo '{\"type\": \"commonjs\"}' > dist/server/package.json",
+		"build": "npm run build:client && npm run build:server",
 		"preview": "vite preview",
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"test:coverage": "vitest run --coverage"
 	},
 	"dependencies": {
+		"@devvit/web": "^0.15.4",
 		"react": "^18.3.1",
 		"react-dom": "^18.3.1"
 	},

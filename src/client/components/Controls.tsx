@@ -1,11 +1,17 @@
 import type React from "react";
 import type { SubredditTheme } from "../engine/generator";
+import type { DeductiveHint } from "../engine/hintEngine";
 
 interface ControlsProps {
 	canUndo: boolean;
 	canRedo: boolean;
+	isWon: boolean;
+	activeHint: DeductiveHint | null;
 	onUndo: () => void;
 	onRedo: () => void;
+	onHint: () => void;
+	onApplyHint: () => void;
+	onDismissHint: () => void;
 	onClear: () => void;
 	onAutoX: () => void;
 	subreddits: SubredditTheme[];
@@ -14,51 +20,114 @@ interface ControlsProps {
 export const Controls: React.FC<ControlsProps> = ({
 	canUndo,
 	canRedo,
+	isWon,
+	activeHint,
 	onUndo,
 	onRedo,
+	onHint,
+	onApplyHint,
+	onDismissHint,
 	onClear,
 	onAutoX,
 	subreddits,
 }) => {
 	return (
 		<>
+			{activeHint && (
+				<div
+					className={`hint-banner hint-banner-${activeHint.action}`}
+					role="status"
+				>
+					<div className="hint-banner-header">
+						<div className="hint-banner-title-row">
+							<span className="hint-rule-badge">{activeHint.ruleBadge}</span>
+							<strong className="hint-banner-title">{activeHint.title}</strong>
+						</div>
+						<button
+							type="button"
+							className="hint-dismiss-btn"
+							onClick={onDismissHint}
+							aria-label="Dismiss hint"
+							title="Dismiss (Esc)"
+						>
+							✕
+						</button>
+					</div>
+					<p className="hint-banner-text">{activeHint.explanation}</p>
+					<div className="hint-banner-actions">
+						<button
+							type="button"
+							className="hint-apply-btn"
+							onClick={onApplyHint}
+						>
+							Apply Step <kbd className="kbd-inline">Enter</kbd>
+						</button>
+					</div>
+				</div>
+			)}
+
 			<div className="controls-bar">
 				<button
+					type="button"
 					className="control-btn"
 					onClick={onUndo}
-					disabled={!canUndo}
-					title="Undo move"
+					disabled={!canUndo || isWon}
+					title="Undo move (Z)"
 				>
 					<span>↩️</span>
-					<span>Undo</span>
+					<span className="control-label">
+						Undo <kbd className="kbd-tag">Z</kbd>
+					</span>
 				</button>
 
 				<button
+					type="button"
 					className="control-btn"
 					onClick={onRedo}
-					disabled={!canRedo}
-					title="Redo move"
+					disabled={!canRedo || isWon}
+					title="Redo move (Y)"
 				>
 					<span>↪️</span>
-					<span>Redo</span>
+					<span className="control-label">
+						Redo <kbd className="kbd-tag">Y</kbd>
+					</span>
 				</button>
 
 				<button
+					type="button"
+					className={`control-btn hint-btn ${activeHint ? "hint-btn-active" : ""}`}
+					onClick={onHint}
+					disabled={isWon}
+					title="Smart Deductive Hint (H)"
+				>
+					<span>💡</span>
+					<span className="control-label">
+						Hint <kbd className="kbd-tag">H</kbd>
+					</span>
+				</button>
+
+				<button
+					type="button"
 					className="control-btn"
 					onClick={onAutoX}
+					disabled={isWon}
 					title="Mark X around placed stars"
 				>
 					<span>✨</span>
-					<span>Auto-X</span>
+					<span className="control-label">Auto-X</span>
 				</button>
 
 				<button
+					type="button"
 					className="control-btn"
 					onClick={onClear}
-					title="Clear all tokens"
+					disabled={isWon}
+					title="Reset board (R)"
 				>
 					<span>🗑️</span>
-					<span>Reset</span>
+					<span className="control-label">
+						Reset <kbd className="kbd-tag">R</kbd>
+					</span>
 				</button>
 			</div>
 

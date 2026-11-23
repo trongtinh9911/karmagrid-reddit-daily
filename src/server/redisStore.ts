@@ -22,9 +22,9 @@ export interface MinimalRedisClient {
 	zAdd(key: string, member: { member: string; score: number }): Promise<number>;
 	zRange(
 		key: string,
-		start: number,
-		stop: number,
-		options?: { by?: "score"; reverse?: boolean },
+		start: number | string,
+		stop: number | string,
+		options?: any,
 	): Promise<{ member: string; score: number }[]>;
 	get(key: string): Promise<string | null>;
 	set(key: string, value: string): Promise<string | null>;

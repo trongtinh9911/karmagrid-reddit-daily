@@ -16,7 +16,7 @@ export const HowToPlayModal: React.FC<HowToPlayModalProps> = ({
 			<div className="modal-content" onClick={(e) => e.stopPropagation()}>
 				<div className="modal-header">
 					<h2 className="modal-title">How to Play KarmaGrid</h2>
-					<button className="close-btn" onClick={onClose}>
+					<button type="button" className="close-btn" onClick={onClose}>
 						✕
 					</button>
 				</div>
@@ -25,8 +25,8 @@ export const HowToPlayModal: React.FC<HowToPlayModalProps> = ({
 					<div className="rule-item">
 						<div className="rule-number">1</div>
 						<div>
-							<strong>One Star per Row & Column:</strong> Place exactly one Snoo
-							Karma Star ⭐ in every horizontal row and vertical column.
+							<strong>One Star per Row &amp; Column:</strong> Place exactly one
+							Snoo Karma Star ⭐ in every horizontal row and vertical column.
 						</div>
 					</div>
 
@@ -43,21 +43,45 @@ export const HowToPlayModal: React.FC<HowToPlayModalProps> = ({
 						<div className="rule-number">3</div>
 						<div>
 							<strong>No Touching:</strong> Stars cannot touch each other in any
-							direction—not even diagonally!
+							direction — not even diagonally!
 						</div>
 					</div>
 
 					<div className="rule-item">
 						<div className="rule-number">4</div>
 						<div>
-							<strong>Controls:</strong> Tap a cell once to place a ⭐. Tap
-							again to mark an ✕ (to eliminate cells you know are empty). Tap a
-							third time to clear.
+							<strong>Smart Hints &amp; Archive Practice:</strong> Click{" "}
+							<strong>💡 Hint</strong> for a step-by-step logical explanation,
+							or switch between <strong>5×5</strong>, <strong>6×6</strong>, and{" "}
+							<strong>7×7 Master</strong> practice boards anytime without
+							risking your Daily Streak.
+						</div>
+					</div>
+
+					<div className="shortcuts-box">
+						<div className="shortcuts-title">Keyboard Shortcuts</div>
+						<div className="shortcuts-grid">
+							<span>
+								<kbd className="kbd-tag">Z</kbd> Undo
+							</span>
+							<span>
+								<kbd className="kbd-tag">Y</kbd> Redo
+							</span>
+							<span>
+								<kbd className="kbd-tag">H</kbd> Smart Hint
+							</span>
+							<span>
+								<kbd className="kbd-tag">R</kbd> Reset
+							</span>
 						</div>
 					</div>
 				</div>
 
-				<button className="control-btn primary-btn" onClick={onClose}>
+				<button
+					type="button"
+					className="control-btn primary-btn"
+					onClick={onClose}
+				>
 					Got it, let's play!
 				</button>
 			</div>

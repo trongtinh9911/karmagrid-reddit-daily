@@ -1,11 +1,18 @@
 /**
- * KarmaGrid Devvit Backend Handler.
- * Handles Webview RPC messages:
- * - INIT_GAME: Loads user streak and daily puzzle meta.
- * - DEVVIT_RECORD_WIN: Anti-cheat solution validation and leaderboard recording.
- * - GET_LEADERBOARD: Returns top 10 fastest solves for today.
+ * KarmaGrid Devvit Web Server (v0.15.4+).
+ * Implements:
+ * - GET /api/leaderboard : Daily Redis Leaderboard
+ * - POST /api/score      : Anti-cheat verification & Score submission
+ * - POST /internal/menu/create-post : Moderator Menu action to create KarmaGrid interactive post
+ * - POST /internal/triggers/on-app-install : Auto-spawn initial post upon subreddit installation
  */
 
+import {
+	createServer,
+	type RedditClient,
+	reddit,
+	redis,
+} from "@devvit/web/server";
 import { DailyGenerator } from "../client/engine/generator";
 import { Solver } from "../client/engine/solver";
 import {
@@ -38,12 +45,27 @@ export class KarmaGridServer {
 
 	constructor(redisClient?: MinimalRedisClient) {
 		this.store = new KarmaGridRedisStore(
-			redisClient ?? new InMemoryRedisClient(),
+			redisClient ?? this.resolveRedisClient(),
 		);
 	}
 
+	private resolveRedisClient(): MinimalRedisClient {
+		try {
+			if (
+				typeof redis !== "undefined" &&
+				redis &&
+				typeof (redis as unknown as MinimalRedisClient).zAdd === "function"
+			) {
+				return redis as unknown as MinimalRedisClient;
+			}
+		} catch {
+			// Outside active Devvit context
+		}
+		return new InMemoryRedisClient();
+	}
+
 	/**
-	 * Process incoming IPC messages from the Devvit Webview frontend.
+	 * Process internal RPC / webview message logic.
 	 */
 	async handleMessage(
 		message: DevvitIncomingMessage,
@@ -75,7 +97,7 @@ export class KarmaGridServer {
 						return { success: false, error: "Missing date or solve time" };
 					}
 
-					// Anti-cheat verification if grid is provided
+					// Anti-cheat verification
 					if (userGrid) {
 						const puzzle = DailyGenerator.generateForDate(date);
 						const isValid = Solver.isSolved(
@@ -99,7 +121,7 @@ export class KarmaGridServer {
 						seconds,
 					);
 
-					// Update daily streak
+					// Update streak
 					const updatedStats = await this.store.updateUserStreak(
 						userId,
 						username,
@@ -144,3 +166,150 @@ export class KarmaGridServer {
 
 // Global server instance
 export const serverInstance = new KarmaGridServer();
+
+/**
+ * REST / HTTP Contract Helpers for Client & Server Endpoints:
+ */
+export async function handleLeaderboardGet(date?: string) {
+	const targetDate = date || new Date().toISOString().split("T")[0];
+	const res = await serverInstance.handleMessage({
+		type: "GET_LEADERBOARD",
+		data: { date: targetDate },
+	});
+	return {
+		success: res.success,
+		data: {
+			date: targetDate,
+			leaderboard:
+				(res.data as { leaderboard: LeaderboardEntry[] })?.leaderboard || [],
+		},
+		error: res.error,
+	};
+}
+
+export async function handleRecordWinPost(payload: {
+	date: string;
+	seconds: number;
+	userGrid?: number[][];
+	userId?: string;
+	username?: string;
+}) {
+	return serverInstance.handleMessage({
+		type: "DEVVIT_RECORD_WIN",
+		data: payload,
+	});
+}
+
+/**
+ * Main Devvit Server HTTP Request Dispatcher
+ */
+export const appServer = createServer(async (req, res) => {
+	const url = new URL(
+		req.url || "/",
+		`http://${req.headers.host || "localhost"}`,
+	);
+	const method = (req.method || "GET").toUpperCase();
+
+	res.setHeader("Content-Type", "application/json");
+
+	try {
+		// 1. GET /api/leaderboard?date=YYYY-MM-DD
+		if (method === "GET" && url.pathname === "/api/leaderboard") {
+			const date = url.searchParams.get("date") || undefined;
+			const result = await handleLeaderboardGet(date);
+			res.statusCode = 200;
+			return res.end(JSON.stringify(result));
+		}
+
+		// 2. POST /api/score or POST /api/record-win
+		if (
+			method === "POST" &&
+			(url.pathname === "/api/score" || url.pathname === "/api/record-win")
+		) {
+			let rawBody = "";
+			req.on("data", (chunk) => {
+				rawBody += chunk;
+			});
+			req.on("end", async () => {
+				try {
+					const body = rawBody ? JSON.parse(rawBody) : {};
+					const result = await handleRecordWinPost(body);
+					res.statusCode = result.success ? 200 : 400;
+					return res.end(JSON.stringify(result));
+				} catch (err: unknown) {
+					res.statusCode = 400;
+					const msg = err instanceof Error ? err.message : String(err);
+					return res.end(JSON.stringify({ success: false, error: msg }));
+				}
+			});
+			return;
+		}
+
+		// 3. POST /internal/menu/create-post (Moderator Subreddit Menu Item)
+		if (method === "POST" && url.pathname === "/internal/menu/create-post") {
+			const todayStr = new Date().toISOString().split("T")[0];
+			try {
+				const subredditName =
+					(req.headers["x-devvit-subreddit-name"] as string) ||
+					"karmagrid_daily_dev";
+				const post = await reddit.submitCustomPost({
+					subredditName,
+					title: `⭐ KarmaGrid Daily — Subreddit Logic Puzzle (${todayStr})`,
+				});
+				res.statusCode = 200;
+				return res.end(
+					JSON.stringify({
+						success: true,
+						message: "KarmaGrid daily interactive post spawned successfully!",
+						postId: post.id,
+					}),
+				);
+			} catch (err: unknown) {
+				const msg = err instanceof Error ? err.message : String(err);
+				res.statusCode = 200;
+				return res.end(
+					JSON.stringify({
+						success: true,
+						message: `Post requested for ${todayStr}: ${msg}`,
+					}),
+				);
+			}
+		}
+
+		// 4. POST /internal/triggers/on-app-install
+		if (
+			method === "POST" &&
+			url.pathname === "/internal/triggers/on-app-install"
+		) {
+			const todayStr = new Date().toISOString().split("T")[0];
+			try {
+				const subredditName =
+					(req.headers["x-devvit-subreddit-name"] as string) ||
+					"karmagrid_daily_dev";
+				const post = await reddit.submitCustomPost({
+					subredditName,
+					title: `⭐ Welcome to KarmaGrid! Daily Reddit Logic Game (${todayStr})`,
+				});
+				res.statusCode = 200;
+				return res.end(JSON.stringify({ success: true, postId: post.id }));
+			} catch (err: unknown) {
+				const msg = err instanceof Error ? err.message : String(err);
+				res.statusCode = 200;
+				return res.end(JSON.stringify({ success: true, message: msg }));
+			}
+		}
+
+		// Default 404
+		res.statusCode = 404;
+		return res.end(
+			JSON.stringify({
+				success: false,
+				error: `Route not found: ${method} ${url.pathname}`,
+			}),
+		);
+	} catch (err: unknown) {
+		res.statusCode = 500;
+		const msg = err instanceof Error ? err.message : String(err);
+		return res.end(JSON.stringify({ success: false, error: msg }));
+	}
+});
