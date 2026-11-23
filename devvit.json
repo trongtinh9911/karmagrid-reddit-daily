@@ -2,7 +2,7 @@
 	"$schema": "https://developers.reddit.com/schema/config-file.v1.json",
 	"name": "karmagrid-daily",
 	"post": {
-		"dir": "dist",
+		"dir": "dist/client",
 		"entrypoints": {
 			"default": {
 				"entry": "index.html",
@@ -13,6 +13,12 @@
 	"server": {
 		"dir": "dist/server",
 		"entry": "index.js"
+	},
+	"permissions": {
+		"redis": true,
+		"reddit": {
+			"enable": true
+		}
 	},
 	"menu": {
 		"items": [
@@ -26,7 +32,8 @@
 		]
 	},
 	"triggers": {
-		"onAppInstall": "/internal/triggers/on-app-install"
+		"onAppInstall": "/internal/triggers/on-app-install",
+		"onAppUpgrade": "/internal/triggers/on-app-install"
 	},
 	"dev": {
 		"subreddit": "karmagrid_daily_dev"

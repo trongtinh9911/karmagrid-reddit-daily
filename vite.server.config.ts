@@ -1,17 +1,21 @@
+import { builtinModules } from "node:module";
 import { defineConfig } from "vite";
 
 export default defineConfig({
+	ssr: {
+		noExternal: true,
+	},
 	build: {
 		ssr: "src/server/index.ts",
 		outDir: "dist/server",
-		emptyOutDir: false,
-		target: "node18",
+		emptyOutDir: true,
+		target: "node22",
 		rollupOptions: {
 			output: {
 				entryFileNames: "index.js",
 				format: "cjs",
 			},
-			external: ["@devvit/web/server"],
+			external: [...builtinModules, ...builtinModules.map((m) => `node:${m}`)],
 		},
 	},
 });

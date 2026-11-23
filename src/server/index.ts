@@ -8,8 +8,9 @@
  */
 
 import {
+	context,
 	createServer,
-	type RedditClient,
+	getServerPort,
 	reddit,
 	redis,
 } from "@devvit/web/server";
@@ -249,53 +250,92 @@ export const appServer = createServer(async (req, res) => {
 		if (method === "POST" && url.pathname === "/internal/menu/create-post") {
 			const todayStr = new Date().toISOString().split("T")[0];
 			try {
-				const subredditName =
-					(req.headers["x-devvit-subreddit-name"] as string) ||
-					"karmagrid_daily_dev";
+				let subredditName = "karmagrid_daily_dev";
+				try {
+					subredditName =
+						context.subredditName ||
+						(req.headers["x-devvit-subreddit-name"] as string) ||
+						"karmagrid_daily_dev";
+				} catch {
+					subredditName =
+						(req.headers["x-devvit-subreddit-name"] as string) ||
+						"karmagrid_daily_dev";
+				}
 				const post = await reddit.submitCustomPost({
 					subredditName,
 					title: `⭐ KarmaGrid Daily — Subreddit Logic Puzzle (${todayStr})`,
 				});
+				const shortId = String(post.id || "").replace(/^t3_/, "");
+				const postUrl =
+					post.url ||
+					`https://reddit.com/r/${subredditName}/comments/${shortId}`;
+				console.log(
+					`[KarmaGrid] Menu created post ${post.id} in r/${subredditName}: ${postUrl}`,
+				);
 				res.statusCode = 200;
 				return res.end(
 					JSON.stringify({
-						success: true,
-						message: "KarmaGrid daily interactive post spawned successfully!",
-						postId: post.id,
+						navigateTo: postUrl,
+						showToast: {
+							text: "KarmaGrid Daily post created!",
+							appearance: "success",
+						},
 					}),
 				);
 			} catch (err: unknown) {
 				const msg = err instanceof Error ? err.message : String(err);
+				console.error("[KarmaGrid] Menu create-post failed:", msg);
 				res.statusCode = 200;
 				return res.end(
 					JSON.stringify({
-						success: true,
-						message: `Post requested for ${todayStr}: ${msg}`,
+						showToast: `Could not create KarmaGrid post: ${msg}`,
 					}),
 				);
 			}
 		}
 
-		// 4. POST /internal/triggers/on-app-install
+		// 4. POST /internal/triggers/on-app-install (also handles onAppUpgrade)
 		if (
 			method === "POST" &&
 			url.pathname === "/internal/triggers/on-app-install"
 		) {
 			const todayStr = new Date().toISOString().split("T")[0];
 			try {
-				const subredditName =
-					(req.headers["x-devvit-subreddit-name"] as string) ||
-					"karmagrid_daily_dev";
+				let subredditName = "karmagrid_daily_dev";
+				try {
+					subredditName =
+						context.subredditName ||
+						(req.headers["x-devvit-subreddit-name"] as string) ||
+						"karmagrid_daily_dev";
+				} catch {
+					subredditName =
+						(req.headers["x-devvit-subreddit-name"] as string) ||
+						"karmagrid_daily_dev";
+				}
 				const post = await reddit.submitCustomPost({
 					subredditName,
-					title: `⭐ Welcome to KarmaGrid! Daily Reddit Logic Game (${todayStr})`,
+					title: `⭐ KarmaGrid Daily — Subreddit Logic Puzzle (${todayStr})`,
 				});
+				const shortId = String(post.id || "").replace(/^t3_/, "");
+				const postUrl =
+					post.url ||
+					`https://reddit.com/r/${subredditName}/comments/${shortId}`;
+				console.log(
+					`[KarmaGrid] Trigger created post ${post.id} in r/${subredditName}: ${postUrl}`,
+				);
 				res.statusCode = 200;
-				return res.end(JSON.stringify({ success: true, postId: post.id }));
+				return res.end(
+					JSON.stringify({
+						status: "success",
+						postId: post.id,
+						url: postUrl,
+					}),
+				);
 			} catch (err: unknown) {
 				const msg = err instanceof Error ? err.message : String(err);
+				console.error("[KarmaGrid] Trigger on-app-install failed:", msg);
 				res.statusCode = 200;
-				return res.end(JSON.stringify({ success: true, message: msg }));
+				return res.end(JSON.stringify({ status: "error", message: msg }));
 			}
 		}
 
@@ -313,3 +353,13 @@ export const appServer = createServer(async (req, res) => {
 		return res.end(JSON.stringify({ success: false, error: msg }));
 	}
 });
+
+if (!process.env.VITEST) {
+	const port = getServerPort();
+	appServer.on("error", (err) => {
+		console.error("[KarmaGrid Server] error:", err);
+	});
+	appServer.listen(port, () => {
+		console.log(`[KarmaGrid Server] listening on port ${port}`);
+	});
+}
