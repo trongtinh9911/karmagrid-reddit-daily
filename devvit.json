@@ -1,10 +1,13 @@
 {
-	"name": "reddit-karmagrid",
-	"version": "1.0.0",
-	"title": "KarmaGrid - Daily Reddit Logic Puzzle",
-	"description": "Daily 60-second deductive logic grid. One Snoo per row, column, and subreddit sector. No touching!",
-	"capabilities": ["redis", "redditAPI"],
-	"webview": {
-		"entry": "dist/index.html"
+	"$schema": "https://developers.reddit.com/schema/config-file.v1.json",
+	"name": "karmagrid-daily",
+	"post": {
+		"dir": "dist",
+		"entrypoints": {
+			"default": {
+				"entry": "index.html",
+				"height": "tall"
+			}
+		}
 	}
 }
