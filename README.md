@@ -3,7 +3,7 @@
 [![Devvit Web](https://img.shields.io/badge/Platform-Reddit%20Devvit%20Web-FF4500?logo=reddit&logoColor=white)](https://developers.reddit.com/)
 [![React 18](https://img.shields.io/badge/Frontend-React%2018%20%2B%20TypeScript-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![Vite 5](https://img.shields.io/badge/Bundler-Vite%205-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
-[![Tests Passing](https://img.shields.io/badge/Vitest-19%2F19%20PASS%20(365--Day%20Validated)-brightgreen?logo=vitest&logoColor=white)](https://vitest.dev/)
+[![Tests Passing](https://img.shields.io/badge/Vitest-34%2F34%20PASS%20(365--Day%20Verified)-brightgreen?logo=vitest&logoColor=white)](https://vitest.dev/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 > **Submission for Reddit's Game of the Day Hackathon ($35,000 Prize Pool on Devpost)**  
