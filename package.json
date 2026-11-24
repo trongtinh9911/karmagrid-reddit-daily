@@ -1,6 +1,6 @@
 {
 	"name": "reddit-karmagrid",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"description": "KarmaGrid - The Daily Reddit Logic Game for Reddit's Game of the Day Hackathon",
 	"private": true,
 	"type": "module",
